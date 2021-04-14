@@ -1194,6 +1194,14 @@ systemtarball-nodeps: $(FS_GET_STATS) \
 .PHONY: stnod
 stnod: systemtarball-nodeps
 
+######### verity_block ######
+
+VERITY_BLOCK :=$(PRODUCT_OUT)/verity_block.img
+verity_block: $(INSTALLED_SYSTEMIMAGE)
+	build/tools/verity/gen_file_verify_block.sh -s ${PRODUCT_OUT}/system \
+		-o ${PRODUCT_OUT}/verity_block.img
+.PHONY: verity_block
+
 # -----------------------------------------------------------------
 ## platform.zip: system, plus other files to be used in PDK fusion build,
 ## in a zip file
@@ -1585,8 +1593,25 @@ define package_files-copy-root
   fi
 endef
 
-built_ota_tools :=
+toc0_file := \
+	$(PRODUCT_OUT)/toc0.fex
 
+uboot_files := \
+	$(PRODUCT_OUT)/bootloader.fex \
+	$(PRODUCT_OUT)/env.fex \
+	$(PRODUCT_OUT)/boot0_nand.fex \
+	$(PRODUCT_OUT)/boot0_sdcard.fex \
+	$(PRODUCT_OUT)/toc1.fex \
+	$(PRODUCT_OUT)/uboot_nand.fex \
+	$(PRODUCT_OUT)/uboot_sdcard.fex \
+	$(toc0_file)
+
+$(toc0_file) : \
+	$(INSTALLED_BOOTIMAGE_TARGET) \
+	$(INSTALLED_RECOVERYIMAGE_TARGET)
+	$(hide) source build/envsetup.sh && get_uboot
+
+built_ota_tools :=
 # We can't build static executables when SANITIZE_TARGET=address
 ifeq ($(strip $(SANITIZE_TARGET)),)
 built_ota_tools += \
@@ -1594,6 +1619,7 @@ built_ota_tools += \
 endif
 
 $(BUILT_TARGET_FILES_PACKAGE): PRIVATE_OTA_TOOLS := $(built_ota_tools)
+$(BUILT_TARGET_FILES_PACKAGE): PRIVATE_OTA_UBOOT := $(uboot_files)
 
 $(BUILT_TARGET_FILES_PACKAGE): PRIVATE_RECOVERY_API_VERSION := $(RECOVERY_API_VERSION)
 $(BUILT_TARGET_FILES_PACKAGE): PRIVATE_RECOVERY_FSTAB_VERSION := $(RECOVERY_FSTAB_VERSION)
@@ -1629,6 +1655,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_VENDORIMAGE_TARGET) \
 		$(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 		$(SELINUX_FC) \
+		$(toc0_file) \
 		$(APKCERTS_FILE) \
 		$(HOST_OUT_EXECUTABLES)/fs_config \
 		| $(ACP)
@@ -1703,6 +1730,8 @@ endif
 	@# Extra contents of the OTA package
 	$(hide) mkdir -p $(zip_root)/OTA
 	$(hide) $(ACP) $(INSTALLED_ANDROID_INFO_TXT_TARGET) $(zip_root)/OTA/
+	$(hide) $(ACP) -r $(PRIVATE_OTA_UBOOT) $(zip_root)/
+
 ifneq ($(AB_OTA_UPDATER),true)
 ifneq ($(built_ota_tools),)
 	$(hide) mkdir -p $(zip_root)/OTA/bin
@@ -1798,6 +1827,12 @@ ifeq ($(BREAKPAD_GENERATE_SYMBOLS),true)
 	@# If breakpad symbols have been generated, add them to the zip.
 	$(hide) $(ACP) -r $(TARGET_OUT_BREAKPAD) $(zip_root)/BREAKPAD
 endif
+
+	#Prepare SYSTEM verity block for target
+	$(hide) rm -rf ${PRODUCT_OUT}/verity/
+	$(hide) build/tools/verity/gen_file_verify_block.sh -s $(zip_root)/SYSTEM \
+		-o ${zip_root}/verity_block.img
+
 	@# Zip everything up, preserving symlinks and placing META/ files first to
 	@# help early validation of the .zip file while uploading it.
 	$(hide) (cd $(zip_root) && \
@@ -1843,7 +1878,6 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE)
 	@echo "Package OTA: $@"
 	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
-	   --block \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
@@ -1853,6 +1887,88 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE)
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 
 endif    # build_ota_package
+
+
+# -----------------------------------------------------------------
+# OTA test boot update package
+
+name := $(TARGET_PRODUCT)
+ifeq ($(TARGET_BUILD_TYPE),debug)
+  name := $(name)_debug
+endif
+name := $(name)-ota-$(FILE_NAME_TAG)
+
+INTERNAL_OTA_BOOTTEST_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name)_boottest.zip
+
+$(INTERNAL_OTA_BOOTTEST_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
+
+$(INTERNAL_OTA_BOOTTEST_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE)
+	@echo "Package OTA_testboot: $@"
+	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
+	   ./build/tools/releasetools/ota_from_target_files -v \
+	   --test_boot_ota \
+	   -p $(HOST_OUT) \
+	   -k $(KEY_CERT_PAIR) \
+	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
+	   $(BUILT_TARGET_FILES_PACKAGE) $@
+
+.PHONY: otapackage_boottest
+otapackage_boottest: $(INTERNAL_OTA_BOOTTEST_PACKAGE_TARGET)
+
+
+# -----------------------------------------------------------------
+# OTA test kernel update package
+
+name := $(TARGET_PRODUCT)
+ifeq ($(TARGET_BUILD_TYPE),debug)
+  name := $(name)_debug
+endif
+name := $(name)-ota-$(FILE_NAME_TAG)
+
+INTERNAL_OTA_KERNELTEST_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name)_kerneltest.zip
+
+$(INTERNAL_OTA_KERNELTEST_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
+
+$(INTERNAL_OTA_KERNELTEST_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE)
+	@echo "Package OTA_kernelboot: $@"
+	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
+	   ./build/tools/releasetools/ota_from_target_files -v \
+	   --test_kernel_ota \
+	   -p $(HOST_OUT) \
+	   -k $(KEY_CERT_PAIR) \
+	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
+	   $(BUILT_TARGET_FILES_PACKAGE) $@
+
+.PHONY: otapackage_kerneltest
+otapackage_kerneltest: $(INTERNAL_OTA_KERNELTEST_PACKAGE_TARGET)
+
+
+
+# -----------------------------------------------------------------
+# OTA update package from old_target_files.zip
+
+name := $(TARGET_PRODUCT)
+ifeq ($(TARGET_BUILD_TYPE),debug)
+  name := $(name)_debug
+endif
+name := $(name)-ota-$(FILE_NAME_TAG)-inc
+
+INTERNAL_OTA_PACKAGE_TARGET_INC := $(PRODUCT_OUT)/$(name).zip
+
+$(INTERNAL_OTA_PACKAGE_TARGET_INC): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
+
+$(INTERNAL_OTA_PACKAGE_TARGET_INC): $(BUILT_TARGET_FILES_PACKAGE) $(OTATOOLS)
+	@echo "Package OTA: $@"
+	$(hide) ./build/tools/releasetools/ota_from_target_files -v \
+	   -p $(HOST_OUT) \
+           -k $(KEY_CERT_PAIR) \
+			-i ./old_target_files.zip \
+           $(BUILT_TARGET_FILES_PACKAGE) $@
+
+.PHONY: otapackage_inc
+otapackage_inc: $(INTERNAL_OTA_PACKAGE_TARGET_INC)
+
+
 
 # -----------------------------------------------------------------
 # The update package

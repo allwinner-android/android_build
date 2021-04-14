@@ -23,19 +23,14 @@ PRODUCT_DEVICE := generic
 PRODUCT_NAME := core
 
 PRODUCT_PACKAGES += \
-    BackupRestoreConfirmation \
     CtsShimPrebuilt \
     CtsShimPrivPrebuilt \
-    DownloadProvider \
     ExtShared \
     ExtServices \
-    HTMLViewer \
     MediaProvider \
     PackageInstaller \
     SettingsProvider \
-    Shell \
     StatementService \
-    WallpaperBackup \
     bcc \
     bu \
     com.android.future.usb.accessory \

@@ -88,6 +88,9 @@ def main(argv):
             continue
           common.ZipWrite(
               output_zip, os.path.join(images_path, image), image)
+
+        verity_block = common.GetFex("verity_block.img", OPTIONS.input_tmp + str("/verity_block.img"))
+        common.ZipWriteStr(output_zip, "verity_block.img", verity_block.data)
         done = True
 
     if not done:
@@ -107,6 +110,9 @@ def main(argv):
             "recovery.img", "recovery.img", OPTIONS.input_tmp, "RECOVERY")
         if recovery_image:
           recovery_image.AddToZip(output_zip)
+
+      verity_block = common.GetFex("verity_block.img", OPTIONS.input_tmp + str("/verity_block.img"))
+      common.ZipWriteStr(output_zip, "verity_block.img", verity_block.data)
 
       def banner(s):
         print "\n\n++++ " + s + " ++++\n\n"

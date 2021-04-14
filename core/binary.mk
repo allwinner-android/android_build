@@ -8,7 +8,7 @@
 #######################################
 include $(BUILD_SYSTEM)/base_rules.mk
 #######################################
-
+include $(BUILD_SYSTEM)/device_config.mk
 ##################################################
 # Compute the dependency of the shared libraries
 ##################################################

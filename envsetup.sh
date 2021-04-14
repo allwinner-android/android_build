@@ -260,6 +260,8 @@ function setpaths()
     unset ANDROID_HOST_OUT
     export ANDROID_HOST_OUT=$(get_abs_build_var HOST_OUT)
 
+    tdevice=$(get_build_var TARGET_DEVICE)
+    export DEVICE=$T/device/*/$tdevice
     # needed for building linux on MacOS
     # TODO: fix the path
     #export HOST_EXTRACFLAGS="-I "$T/system/kernel_headers/host_include
@@ -1132,7 +1134,7 @@ case `uname -s` in
     Darwin)
         function sgrep()
         {
-            find -E . -name .repo -prune -o -name .git -prune -o  -type f -iregex '.*\.(c|h|cc|cpp|S|java|xml|sh|mk|aidl|vts)' \
+            find -E . -name .repo -prune -o -name .git -prune -o  -type f -iregex '.*\.(c|h|cc|cpp|S|java|xml|sh|mk|aidl|vts|rc)' \
                 -exec grep --color -n "$@" {} +
         }
 
@@ -1140,7 +1142,7 @@ case `uname -s` in
     *)
         function sgrep()
         {
-            find . -name .repo -prune -o -name .git -prune -o  -type f -iregex '.*\.\(c\|h\|cc\|cpp\|S\|java\|xml\|sh\|mk\|aidl\|vts\)' \
+            find . -name .repo -prune -o -name .git -prune -o  -type f -iregex '.*\.\(c\|h\|cc\|cpp\|S\|java\|xml\|sh\|mk\|aidl\|vts\|rc\)' \
                 -exec grep --color -n "$@" {} +
         }
         ;;

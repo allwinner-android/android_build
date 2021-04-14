@@ -75,6 +75,7 @@ JNI_H_INCLUDE := libnativehelper/include/nativehelper
 #
 FRAMEWORKS_BASE_SUBDIRS := \
 	$(addsuffix /java, \
+            services/net \
 	    core \
 	    graphics \
 	    location \
@@ -90,6 +91,16 @@ FRAMEWORKS_BASE_SUBDIRS := \
 	    wifi \
 	    keystore \
 	    rs \
+	    ../../device/softwinner/common/addons/framework/gpio \
+	    ../../device/softwinner/common/addons/framework/systemmix \
+	    ../../device/softwinner/common/addons/framework/admanager \
+	    ../../device/softwinner/common/addons/framework/nfsmanager \
+	    ../../device/softwinner/common/addons/framework/os \
+	    ../../device/softwinner/common/addons/framework/securefile \
+	    ../../device/softwinner/common/addons/framework/utils \
+            ../../device/softwinner/common/addons/framework/audio \
+            ../../device/softwinner/common/addons/framework/display \
+            ../../vendor/operator/cmcc/frameworks/network \
 	 )
 
 #

@@ -85,17 +85,17 @@ endif
 
 # User tags are not allowed anymore.  Fail early because it will not be installed
 # like it used to be.
-ifneq ($(filter $(my_module_tags),user),)
-  $(warning *** Module name: $(LOCAL_MODULE))
-  $(warning *** Makefile location: $(LOCAL_MODULE_MAKEFILE))
-  $(warning * )
-  $(warning * Module is attempting to use the 'user' tag.  This)
-  $(warning * used to cause the module to be installed automatically.)
-  $(warning * Now, the module must be listed in the PRODUCT_PACKAGES)
-  $(warning * section of a product makefile to have it installed.)
-  $(warning * )
-  $(error user tag detected on module.)
-endif
+#ifneq ($(filter $(my_module_tags),user),)
+#  $(warning *** Module name: $(LOCAL_MODULE))
+#  $(warning *** Makefile location: $(LOCAL_MODULE_MAKEFILE))
+#  $(warning * )
+#  $(warning * Module is attempting to use the 'user' tag.  This)
+#  $(warning * used to cause the module to be installed automatically.)
+#  $(warning * Now, the module must be listed in the PRODUCT_PACKAGES)
+#  $(warning * section of a product makefile to have it installed.)
+#  $(warning * )
+#  $(error user tag detected on module.)
+#endif
 
 # Only the tags mentioned in this test are expected to be set by module
 # makefiles. Anything else is either a typo or a source of unexpected

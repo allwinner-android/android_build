@@ -229,6 +229,7 @@ installclean_files := \
 	$(HOST_OUT)/obj/NOTICE_FILES \
 	$(HOST_OUT)/sdk \
 	$(PRODUCT_OUT)/*.img \
+	$(PRODUCT_OUT)/*.fex \
 	$(PRODUCT_OUT)/*.ini \
 	$(PRODUCT_OUT)/*.txt \
 	$(PRODUCT_OUT)/*.xlb \
@@ -242,6 +243,7 @@ installclean_files := \
 	$(PRODUCT_OUT)/recovery \
 	$(PRODUCT_OUT)/root \
 	$(PRODUCT_OUT)/system \
+	$(PRODUCT_OUT)/verity \
 	$(PRODUCT_OUT)/vendor \
 	$(PRODUCT_OUT)/oem \
 	$(PRODUCT_OUT)/dex_bootjars \

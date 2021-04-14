@@ -406,3 +406,26 @@ class EdifyGenerator(object):
       data = open(input_path, "rb").read()
     common.ZipWriteStr(output_zip, "META-INF/com/google/android/update-binary",
                        data, perms=0o755)
+
+  def MarkOtaState(self, state):
+    self.script.append('markOtaState(%s);' % (state))
+
+  def Sleep(self, time):
+    self.script.append('sleep(%d);' % time)
+
+  def Abort(self):
+    self.script.append('abort();')
+
+  def WriteRawFex(self,mount_point,fn):
+    self.script.append('package_extract_file("%s","%s");' % (fn,mount_point))
+
+  def BurnBoot(self,boot):
+    self.script.append('burnboot(%d);'%(boot))
+
+  def VerifyBootImage(self):
+    """Verify the boot image before burning"""
+    self.script.append('verify_boot_image()||abort("boot.image verify failed\\n\\nOTA package sign failed\\n");')
+
+  def VerifyToc(self,num):
+    """Verify the toc before burning"""
+    self.script.append('verify_toc(%d)||abort("toc(%d) verify failed\\n\\nOTA package sign failed\\n");'%(num,num))
